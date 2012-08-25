@@ -1,0 +1,4 @@
+target remote :3333
+monitor reset halt
+load Debug/AppTemplate.elf
+monitor reset init

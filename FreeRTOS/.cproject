@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?fileVersion 4.0.0?>
+
+<cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
+	<storageModule moduleId="org.eclipse.cdt.core.settings">
+		<cconfiguration id="org.eclipse.cdt.cross.arm.gnu.linux.lib.debug.1655065771">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="org.eclipse.cdt.cross.arm.gnu.linux.lib.debug.1655065771" moduleId="org.eclipse.cdt.core.settings" name="Debug">
+				<externalSettings/>
+				<extensions>
+					<extension id="org.eclipse.cdt.core.GNU_ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.MakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+				</extensions>
+			</storageModule>
+			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.cross.arm.gnu.buildArtefactType.staticLib" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.cross.arm.gnu.buildArtefactType.staticLib" description="" id="org.eclipse.cdt.cross.arm.gnu.linux.lib.debug.1655065771" name="Debug" parent="org.eclipse.cdt.cross.arm.gnu.linux.lib.debug">
+					<folderInfo id="org.eclipse.cdt.cross.arm.gnu.linux.lib.debug.1655065771." name="/" resourcePath="">
+						<toolChain id="org.eclipse.cdt.cross.arm.gnu.linux.lib.toolchain.debug.1001909582" name="ARM Linux GCC (GNUARM)" resourceTypeBasedDiscovery="false" superClass="org.eclipse.cdt.cross.arm.gnu.linux.lib.toolchain.debug">
+							<option id="org.eclipse.cdt.cross.arm.gnu.linux.option.debugging.level.1332310010" name="Debug level" superClass="org.eclipse.cdt.cross.arm.gnu.linux.option.debugging.level" value="org.eclipse.cdt.cross.arm.gnu.base.option.debugging.level.max" valueType="enumerated"/>
+							<option id="org.eclipse.cdt.cross.arm.gnu.linux.option.target.processor.733847629" name="Processor" superClass="org.eclipse.cdt.cross.arm.gnu.linux.option.target.processor" value="org.eclipse.cdt.cross.arm.gnu.base.option.mcpu.cortex-m3" valueType="enumerated"/>
+							<targetPlatform id="org.eclipse.cdt.cross.arm.gnu.linux.lib.platform.debug.4008499" isAbstract="false" name="Linux Platform" superClass="org.eclipse.cdt.cross.arm.gnu.linux.lib.platform.debug"/>
+							<builder buildPath="${workspace_loc:/FreeRTOS/Debug}" id="org.eclipse.cdt.cross.arm.gnu.linux.lib.builder.debug.713189427" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="ARM Linux GNU Make builder" superClass="org.eclipse.cdt.cross.arm.gnu.linux.lib.builder.debug"/>
+							<tool command="arm-none-eabi-gcc" id="org.eclipse.cdt.cross.arm.gnu.linux.lib.assembler.debug.215317260" name="ARM Linux GCC Assembler" superClass="org.eclipse.cdt.cross.arm.gnu.linux.lib.assembler.debug">
+								<option id="org.eclipse.cdt.cross.arm.gnu.assembler.option.include.paths.1134410637" name="Include paths (-I)" superClass="org.eclipse.cdt.cross.arm.gnu.assembler.option.include.paths" valueType="includePath"/>
+								<inputType id="org.eclipse.cdt.cross.arm.gnu.linux.assembler.base.input.1708443266" superClass="org.eclipse.cdt.cross.arm.gnu.linux.assembler.base.input"/>
+							</tool>
+							<tool command="arm-none-eabi-gcc" id="org.eclipse.cdt.cross.arm.gnu.linux.lib.c.compiler.debug.933385016" name="ARM Linux GCC C Compiler" superClass="org.eclipse.cdt.cross.arm.gnu.linux.lib.c.compiler.debug">
+								<option id="org.eclipse.cdt.cross.arm.gnu.c.compiler.option.optimization.level.274222538" name="Optimization level" superClass="org.eclipse.cdt.cross.arm.gnu.c.compiler.option.optimization.level" value="org.eclipse.cdt.cross.arm.gnu.base.option.optimization.level.none" valueType="enumerated"/>
+								<option id="org.eclipse.cdt.cross.arm.gnu.c.compiler.option.include.paths.1639700920" name="Include paths (-I)" superClass="org.eclipse.cdt.cross.arm.gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}}&quot;"/>
+								</option>
+								<inputType id="org.eclipse.cdt.cross.arm.gnu.linux.c.compiler.base.input.325183516" superClass="org.eclipse.cdt.cross.arm.gnu.linux.c.compiler.base.input"/>
+							</tool>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.linux.lib.cpp.compiler.debug.1211967412" name="ARM Linux GCC C++ Compiler" superClass="org.eclipse.cdt.cross.arm.gnu.linux.lib.cpp.compiler.debug">
+								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.compiler.option.optimization.level.956046044" name="Optimization level" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.compiler.option.optimization.level" value="org.eclipse.cdt.cross.arm.gnu.base.option.optimization.level.none" valueType="enumerated"/>
+							</tool>
+							<tool command="arm-none-eabi-ar" id="org.eclipse.cdt.cross.arm.gnu.linux.c.linker.base.1920166411" name="ARM Linux GCC C Linker" superClass="org.eclipse.cdt.cross.arm.gnu.linux.c.linker.base"/>
+							<tool command="arm-none-eabi-ar" id="org.eclipse.cdt.cross.arm.gnu.linux.cpp.linker.base.633747886" name="ARM Linux GCC C++ Linker" superClass="org.eclipse.cdt.cross.arm.gnu.linux.cpp.linker.base"/>
+							<tool command="arm-none-eabi-ar" id="org.eclipse.cdt.cross.arm.gnu.linux.lib.archiver.debug.1078763438" name="ARM Linux GCC Archiver" superClass="org.eclipse.cdt.cross.arm.gnu.linux.lib.archiver.debug"/>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.linux.createflash.base.1544060892" name="ARM Linux GNU Create Flash Image" superClass="org.eclipse.cdt.cross.arm.gnu.linux.createflash.base"/>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.linux.createlisting.base.1282238311" name="ARM Linux GNU Create Listing" superClass="org.eclipse.cdt.cross.arm.gnu.linux.createlisting.base"/>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.linux.printsize.base.1618681069" name="ARM Linux GNU Print Size" superClass="org.eclipse.cdt.cross.arm.gnu.linux.printsize.base"/>
+						</toolChain>
+					</folderInfo>
+				</configuration>
+			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+		</cconfiguration>
+		<cconfiguration id="org.eclipse.cdt.cross.arm.gnu.linux.lib.release.1996644112">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="org.eclipse.cdt.cross.arm.gnu.linux.lib.release.1996644112" moduleId="org.eclipse.cdt.core.settings" name="Release">
+				<externalSettings/>
+				<extensions>
+					<extension id="org.eclipse.cdt.core.GNU_ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.MakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+				</extensions>
+			</storageModule>
+			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.cross.arm.gnu.buildArtefactType.staticLib" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.cross.arm.gnu.buildArtefactType.staticLib" description="" id="org.eclipse.cdt.cross.arm.gnu.linux.lib.release.1996644112" name="Release" parent="org.eclipse.cdt.cross.arm.gnu.linux.lib.release">
+					<folderInfo id="org.eclipse.cdt.cross.arm.gnu.linux.lib.release.1996644112." name="/" resourcePath="">
+						<toolChain id="org.eclipse.cdt.cross.arm.gnu.linux.lib.toolchain.release.1349841717" name="ARM Linux GCC (GNUARM)" resourceTypeBasedDiscovery="false" superClass="org.eclipse.cdt.cross.arm.gnu.linux.lib.toolchain.release">
+							<option id="org.eclipse.cdt.cross.arm.gnu.linux.option.debugging.level.1678068141" name="Debug level" superClass="org.eclipse.cdt.cross.arm.gnu.linux.option.debugging.level" value="org.eclipse.cdt.cross.arm.gnu.base.option.debugging.level.none" valueType="enumerated"/>
+							<option id="org.eclipse.cdt.cross.arm.gnu.linux.option.target.processor.765808709" name="Processor" superClass="org.eclipse.cdt.cross.arm.gnu.linux.option.target.processor" value="org.eclipse.cdt.cross.arm.gnu.base.option.mcpu.cortex-m3" valueType="enumerated"/>
+							<option id="org.eclipse.cdt.cross.arm.gnu.linux.option.target.thumbinterwork.708741985" name="Thumb interwork (-mthumb-interwork)" superClass="org.eclipse.cdt.cross.arm.gnu.linux.option.target.thumbinterwork" value="false" valueType="boolean"/>
+							<targetPlatform id="org.eclipse.cdt.cross.arm.gnu.linux.lib.platform.release.1626159999" isAbstract="false" name="Linux Platform" superClass="org.eclipse.cdt.cross.arm.gnu.linux.lib.platform.release"/>
+							<builder buildPath="${workspace_loc:/FreeRTOS/Release}" id="org.eclipse.cdt.cross.arm.gnu.linux.lib.builder.release.666561636" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="ARM Linux GNU Make builder" superClass="org.eclipse.cdt.cross.arm.gnu.linux.lib.builder.release"/>
+							<tool command="arm-none-eabi-gcc" id="org.eclipse.cdt.cross.arm.gnu.linux.lib.assembler.release.2088060370" name="ARM Linux GCC Assembler" superClass="org.eclipse.cdt.cross.arm.gnu.linux.lib.assembler.release">
+								<inputType id="org.eclipse.cdt.cross.arm.gnu.linux.assembler.base.input.1085509560" superClass="org.eclipse.cdt.cross.arm.gnu.linux.assembler.base.input"/>
+							</tool>
+							<tool command="arm-none-eabi-gcc" id="org.eclipse.cdt.cross.arm.gnu.linux.lib.c.compiler.release.614172079" name="ARM Linux GCC C Compiler" superClass="org.eclipse.cdt.cross.arm.gnu.linux.lib.c.compiler.release">
+								<option id="org.eclipse.cdt.cross.arm.gnu.c.compiler.option.optimization.level.1368151453" name="Optimization level" superClass="org.eclipse.cdt.cross.arm.gnu.c.compiler.option.optimization.level" value="org.eclipse.cdt.cross.arm.gnu.base.option.optimization.level.size" valueType="enumerated"/>
+								<inputType id="org.eclipse.cdt.cross.arm.gnu.linux.c.compiler.base.input.1800665997" superClass="org.eclipse.cdt.cross.arm.gnu.linux.c.compiler.base.input"/>
+							</tool>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.linux.lib.cpp.compiler.release.1091041956" name="ARM Linux GCC C++ Compiler" superClass="org.eclipse.cdt.cross.arm.gnu.linux.lib.cpp.compiler.release">
+								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.compiler.option.optimization.level.1153411330" name="Optimization level" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.compiler.option.optimization.level" value="org.eclipse.cdt.cross.arm.gnu.base.option.optimization.level.size" valueType="enumerated"/>
+							</tool>
+							<tool command="arm-none-eabi-ar" id="org.eclipse.cdt.cross.arm.gnu.linux.c.linker.base.1660900346" name="ARM Linux GCC C Linker" superClass="org.eclipse.cdt.cross.arm.gnu.linux.c.linker.base"/>
+							<tool command="arm-none-eabi-ar" id="org.eclipse.cdt.cross.arm.gnu.linux.cpp.linker.base.1927167799" name="ARM Linux GCC C++ Linker" superClass="org.eclipse.cdt.cross.arm.gnu.linux.cpp.linker.base"/>
+							<tool command="arm-none-eabi-ar" id="org.eclipse.cdt.cross.arm.gnu.linux.lib.archiver.release.568453302" name="ARM Linux GCC Archiver" superClass="org.eclipse.cdt.cross.arm.gnu.linux.lib.archiver.release"/>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.linux.createflash.base.862169886" name="ARM Linux GNU Create Flash Image" superClass="org.eclipse.cdt.cross.arm.gnu.linux.createflash.base"/>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.linux.createlisting.base.494202934" name="ARM Linux GNU Create Listing" superClass="org.eclipse.cdt.cross.arm.gnu.linux.createlisting.base"/>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.linux.printsize.base.1108633896" name="ARM Linux GNU Print Size" superClass="org.eclipse.cdt.cross.arm.gnu.linux.printsize.base"/>
+						</toolChain>
+					</folderInfo>
+				</configuration>
+			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+		</cconfiguration>
+	</storageModule>
+	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+		<project id="FreeRTOS.org.eclipse.cdt.cross.arm.gnu.linux.lib.1077453311" name="ARM Cross Target Static Library" projectType="org.eclipse.cdt.cross.arm.gnu.linux.lib"/>
+	</storageModule>
+	<storageModule moduleId="refreshScope" versionNumber="1">
+		<resource resourceType="PROJECT" workspacePath="/FreeRTOS"/>
+	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="org.eclipse.cdt.cross.arm.gnu.linux.lib.release.1996644112;org.eclipse.cdt.cross.arm.gnu.linux.lib.release.1996644112.;org.eclipse.cdt.cross.arm.gnu.linux.lib.c.compiler.release.614172079;org.eclipse.cdt.cross.arm.gnu.linux.c.compiler.base.input.1800665997">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.cross.arm.gnu.ARM_GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="org.eclipse.cdt.cross.arm.gnu.linux.lib.debug.1655065771;org.eclipse.cdt.cross.arm.gnu.linux.lib.debug.1655065771.;org.eclipse.cdt.cross.arm.gnu.linux.lib.c.compiler.debug.933385016;org.eclipse.cdt.cross.arm.gnu.linux.c.compiler.base.input.325183516">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.cross.arm.gnu.ARM_GCCManagedMakePerProjectProfileC"/>
+			<profile id="org.eclipse.cdt.cross.arm.gnu.ARM_GCCManagedMakePerProjectProfileC">
+				<buildOutputProvider>
+					<openAction enabled="true" filePath=""/>
+					<parser enabled="true"/>
+				</buildOutputProvider>
+				<scannerInfoProvider id="specsFile">
+					<runAction arguments="-E -P -v -dD ${plugin_state_location}/specs.c" command="arm-none-eabi-gcc" useDefault="true"/>
+					<parser enabled="true"/>
+				</scannerInfoProvider>
+			</profile>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="org.eclipse.cdt.cross.arm.gnu.linux.lib.release.1996644112">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.cross.arm.gnu.ARM_GCCManagedMakePerProjectProfileC"/>
+			<profile id="org.eclipse.cdt.cross.arm.gnu.ARM_GCCManagedMakePerProjectProfileC">
+				<buildOutputProvider>
+					<openAction enabled="true" filePath=""/>
+					<parser enabled="true"/>
+				</buildOutputProvider>
+				<scannerInfoProvider id="specsFile">
+					<runAction arguments="-E -P -v -dD ${plugin_state_location}/specs.c" command="arm-none-eabi-gcc" useDefault="true"/>
+					<parser enabled="true"/>
+				</scannerInfoProvider>
+			</profile>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="org.eclipse.cdt.cross.arm.gnu.linux.lib.debug.1655065771;org.eclipse.cdt.cross.arm.gnu.linux.lib.debug.1655065771.;org.eclipse.cdt.cross.arm.gnu.linux.lib.assembler.debug.215317260;org.eclipse.cdt.cross.arm.gnu.linux.assembler.base.input.1708443266">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.cross.arm.gnu.ARM_GCCManagedMakePerProjectProfileC"/>
+			<profile id="org.eclipse.cdt.cross.arm.gnu.ARM_GCCManagedMakePerProjectProfileC">
+				<buildOutputProvider>
+					<openAction enabled="true" filePath=""/>
+					<parser enabled="true"/>
+				</buildOutputProvider>
+				<scannerInfoProvider id="specsFile">
+					<runAction arguments="-E -P -v -dD ${plugin_state_location}/specs.c" command="arm-none-eabi-gcc" useDefault="true"/>
+					<parser enabled="true"/>
+				</scannerInfoProvider>
+			</profile>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="org.eclipse.cdt.cross.arm.gnu.linux.lib.release.1996644112;org.eclipse.cdt.cross.arm.gnu.linux.lib.release.1996644112.;org.eclipse.cdt.cross.arm.gnu.linux.lib.assembler.release.2088060370;org.eclipse.cdt.cross.arm.gnu.linux.assembler.base.input.1085509560">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.cross.arm.gnu.ARM_GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="org.eclipse.cdt.cross.arm.gnu.linux.lib.debug.1655065771">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.cross.arm.gnu.ARM_GCCManagedMakePerProjectProfileC"/>
+			<profile id="org.eclipse.cdt.cross.arm.gnu.ARM_GCCManagedMakePerProjectProfileC">
+				<buildOutputProvider>
+					<openAction enabled="true" filePath=""/>
+					<parser enabled="true"/>
+				</buildOutputProvider>
+				<scannerInfoProvider id="specsFile">
+					<runAction arguments="-E -P -v -dD ${plugin_state_location}/specs.c" command="arm-none-eabi-gcc" useDefault="true"/>
+					<parser enabled="true"/>
+				</scannerInfoProvider>
+			</profile>
+		</scannerConfigBuildInfo>
+	</storageModule>
+</cproject>
