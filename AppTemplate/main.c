@@ -23,6 +23,8 @@ static void slaveTask(void *pvparameters);
 #include <lwip/ip_addr.h>
 
 static void prvEthernetConfigureInterface(void * param);
+static void EchoRequest( struct netconn *pxNetCon );
+portTASK_FUNCTION( EchoServer, pvParameters );
 
 int main( void )
 {
@@ -53,6 +55,37 @@ int main( void )
 	for( ;; );
 }
 
+portTASK_FUNCTION( EchoServer, pvParameters ){
+        struct netconn *pxTCPListener, *pxNewConnection;
+        pxTCPListener = netconn_new( NETCONN_TCP );
+
+        netconn_bind(pxTCPListener, NULL, 23 );
+        netconn_listen( pxTCPListener );
+
+        for( ;; ){
+                netconn_accept(pxTCPListener,&pxNewConnection);
+                if(pxNewConnection != NULL){
+                        EchoRequest(pxNewConnection);
+                }
+        }
+}
+
+static void EchoRequest( struct netconn *pxNetCon ) {
+        struct netbuf *pxRxBuffer;
+        portCHAR *pcRxString;
+        unsigned portSHORT usLength;
+
+        netconn_recv( pxNetCon, pxRxBuffer);
+        if ( pxRxBuffer != NULL ){
+                netbuf_data( pxRxBuffer, ( void * ) &pcRxString, &usLength );
+                if (  pcRxString != NULL){
+                        netconn_write( pxNetCon, pcRxString, (u16_t) usLength, NETCONN_COPY );
+                }
+        netbuf_delete( pxRxBuffer );
+        }
+}
+
+
 static struct netif s_EMAC_if;
 static void prvEthernetConfigureInterface(void * param)
 {
@@ -82,8 +115,6 @@ extern err_t ethernetif_init( struct netif *netif );
 	netif_set_default(&s_EMAC_if);
 }
 
-unsigned ntask;
-unsigned oldntask = 0;
 static void mainTask( void *pvparameters )
 {
 	STM_EVAL_LEDInit(LED1);
@@ -91,11 +122,6 @@ static void mainTask( void *pvparameters )
 	{
 		STM_EVAL_LEDToggle(LED1);
 		vTaskDelay(10);
-		if(oldntask!=ntask)
-		{
-			printf("Running %d tasks\n",ntask);
-			oldntask = ntask;
-		}
 	}
 }
 
@@ -176,11 +202,20 @@ static void prvSetupHardware( void )
 /*-----------------------------------------------------------*/
 
 /*-----------------------------------------------------------*/
+unsigned ntask;
+unsigned oldntask = 0;
 
 void vApplicationTickHook( void )
 {
 	ntask = uxTaskGetNumberOfTasks();
+	if(oldntask!=ntask)
+	{
+		printf("Running %d tasks\n",ntask);
+		oldntask = ntask;
+	}
 }
+
+
 /*-----------------------------------------------------------*/
 
 

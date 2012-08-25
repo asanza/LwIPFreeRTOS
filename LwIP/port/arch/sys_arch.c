@@ -407,11 +407,9 @@ sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, 
 {
 	xTaskHandle CreatedTask = NULL;
 	int result;
-   if ( s_nextthread < SYS_THREAD_MAX )
-   {
-		vTaskSuspendAll();
+    if ( s_nextthread < SYS_THREAD_MAX )
+    {
       result = xTaskCreate( thread, ( signed portCHAR * ) name, stacksize, arg, prio, &CreatedTask );
-      xTaskResumeAll();
 	   if(result != pdPASS)
 		    CreatedTask = NULL;
 	   else

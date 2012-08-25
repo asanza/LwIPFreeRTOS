@@ -39,24 +39,6 @@
 #include <stm32f10x_gpio.h>
 #include <stm32f10x_rcc.h>
 
-typedef struct
-{
-  vu32 DMABMR;
-  vu32 DMATPDR;
-  vu32 DMARPDR;
-  vu32 DMARDLAR;
-  vu32 DMATDLAR;
-  vu32 DMASR;
-  vu32 DMAOMR;
-  vu32 DMAIER;
-  vu32 DMAMFBOCR;
-  vu32 RESERVED0[9];
-  vu32 DMACHTDR;
-  vu32 DMACHRDR;
-  vu32 DMACHTBAR;
-  vu32 DMACHRBAR;
-} ETH_DMA_TypeDef;
-#define ETH_DMA            ((ETH_DMA_TypeDef *) ETH_DMA_BASE)
 // FreeRTOS include
 #include "FreeRTOS.h"
 #include "semphr.h"
@@ -102,7 +84,7 @@ typedef struct
 #define SendCount Buffer2NextDescAddr
 
 /* If no buffers are available, then wait this long before looking again.... */
-#define netifBUFFER_WAIT_DELAY					( 10 / portTICK_RATE_MS )
+#define netifBUFFER_WAIT_DELAY					( 100 / portTICK_RATE_MS )
 /* ...and don't look more than this many times. */
 #define netifBUFFER_WAIT_ATTEMPTS				( 9 )
 /* Let the DMA know that a new descriptor has been made available to it. */
@@ -210,7 +192,8 @@ static void low_level_init(struct netif *netif) {
 
 	// device capabilities.
 	// don't set NETIF_FLAG_ETHARP if this device is not an ethernet one
-	netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
+	//TODO: LINK_UP is extra here.... maybe!
+	netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP| NETIF_FLAG_LINK_UP;
 
 	/* Do whatever else is needed to initialize interface. */
 
@@ -263,11 +246,9 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p) {
 		/* Send the data from the pbuf to the interface, one pbuf at a
 		 time. The size of the data in each pbuf is kept in the ->len
 		 variable. */
-
 		memcpy(&s_lwip_out_buf[l], (u8_t*) q->payload, q->len);
 		l += q->len;
 	}
-
 	if ( !vSendMACData(l) )
 		res = ERR_BUF;
 
@@ -604,10 +585,10 @@ portBASE_TYPE xEthInitialise(void) {
 		 as if its available (as if it has already been sent twice. */
 		//xTxDescriptor.SendCount = 2;
 
-#ifdef CHECKSUM_BY_HARDWARE
+//#ifdef CHECKSUM_BY_HARDWARE
 		/* Enable the checksum insertion for the Tx frames */
 		ETH_DMATxDescChecksumInsertionConfig(&xTxDescriptor, ETH_DMATxDesc_ChecksumTCPUDPICMPFull);
-#endif
+//#endif
 
 		/* Switch on the interrupts in the NVIC. */
 		xNVICInit.NVIC_IRQChannel = ETH_IRQn;
@@ -717,7 +698,6 @@ static void prvSetupEthGPIO(void) {
 static unsigned char *prvGetNextBuffer(void) {
 	portBASE_TYPE x;
 	unsigned char *ucReturn = NULL;
-	unsigned long ulAttempts = 0;
 
 	while (ucReturn == NULL) {
 		/* Look through the buffers to find one that is not in use by
@@ -738,7 +718,6 @@ static unsigned char *prvGetNextBuffer(void) {
 			vTaskDelay(netifBUFFER_WAIT_DELAY);
 		}
 	}
-
 	return ucReturn;
 }
 
@@ -827,8 +806,9 @@ unsigned char vSendMACData(unsigned short usDataLen) {
 	ETH->DMATPDR = 0;
 
 	/* s_lwip_out_buf is being sent by the Tx descriptor.  Allocate a new buffer. */
+	//TODO: It causes problems under load. It  seems it is not thread safe.
 	s_lwip_out_buf = prvGetNextBuffer();
-
+	vTaskDelay(10);
 	return res;
 }
 

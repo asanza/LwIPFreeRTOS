@@ -3,6 +3,8 @@
 	<name>LwIP</name>
 	<comment></comment>
 	<projects>
+		<project>FreeRTOS</project>
+		<project>STM32PeriphLibs</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
