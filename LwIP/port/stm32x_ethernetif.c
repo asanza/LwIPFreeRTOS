@@ -49,7 +49,7 @@
 #include <string.h>
 
 #define netifMTU								( 1500 )
-#define netifINTERFACE_TASK_STACK_SIZE			( 1600 )
+#define netifINTERFACE_TASK_STACK_SIZE			( 1500 )
 #define netifINTERFACE_TASK_PRIORITY			( configMAX_PRIORITIES - 6 )
 #define IFNAME0 'e'
 #define IFNAME1 'n'
@@ -122,7 +122,7 @@ static unsigned char * s_lwip_out_buf;
 static char s_tx_ready;
 
 /* The semaphore used by the ISR to wake the lwIP task. */
-static xSemaphoreHandle s_xSemaphore = NULL;
+static xSemaphoreHandle ETH_RX_Sem = NULL;
 
 struct ethernetif {
 	struct eth_addr *ethaddr;
@@ -190,23 +190,19 @@ static void low_level_init(struct netif *netif) {
 	// device capabilities.
 	// don't set NETIF_FLAG_ETHARP if this device is not an ethernet one
 	netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP| NETIF_FLAG_LINK_UP;
-	/* Do whatever else is needed to initialize interface. */
-	if (s_xSemaphore == NULL) {
-		vSemaphoreCreateBinary( s_xSemaphore );
-		xSemaphoreTake( s_xSemaphore, 0);
+	/// Create the reception semaphore!.
+	if (ETH_RX_Sem == NULL) {
+		vSemaphoreCreateBinary( ETH_RX_Sem );
 	}
-
 	/* Initialize the MAC. */
 	while (xEthInitialise() != pdPASS) {
 		vTaskDelay(netifINIT_WAIT);
 	}
-
-	netif->flags |= NETIF_FLAG_LINK_UP;
-
 	/* Create the task that handles the EMAC. */
 	xTaskCreate(ethernetif_input, (signed portCHAR *) "ETH_INT",
 			netifINTERFACE_TASK_STACK_SIZE, (void *) netif,
 			netifINTERFACE_TASK_PRIORITY, NULL);
+	ETH_Start(); /// Start eth hardware.
 }
 
 
@@ -228,14 +224,11 @@ static void low_level_init(struct netif *netif) {
  */
 static err_t low_level_output(struct netif *netif, struct pbuf *p) {
 	struct pbuf *q;
-	int i;
 	u32_t l = 0;
 	err_t res = ERR_OK;
-
 #if ETH_PAD_SIZE
 	pbuf_header(p, -ETH_PAD_SIZE); /* drop the padding word */
 #endif
-
 	for (q = p; q != NULL; q = q->next) {
 		/* Send the data from the pbuf to the interface, one pbuf at a
 		 time. The size of the data in each pbuf is kept in the ->len
@@ -245,7 +238,6 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p) {
 	}
 	if ( !vSendMACData(l) )
 		res = ERR_BUF;
-
 #if ETH_PAD_SIZE
 	pbuf_header(p, ETH_PAD_SIZE); /* reclaim the padding word */
 #endif
@@ -331,34 +323,21 @@ static void ethernetif_input(void *pParams) {
 	struct netif *netif;
 	struct ethernetif *ethernetif;
 	struct eth_hdr *ethhdr;
-	struct pbuf *p;
-
+	struct pbuf *p = NULL;
 	netif = (struct netif*) pParams;
 	ethernetif = netif->state;
-
 	for (;;) {
 		do {
-
+			xSemaphoreTake( ETH_RX_Sem, portMAX_DELAY );
 			/* move received packet into a new pbuf */
 			p = low_level_input(netif);
-
-			if (p == NULL) {
-				/* No packet could be read.  Wait a for an interrupt to tell us
-				 there is more data available. */
-				xSemaphoreTake( s_xSemaphore, emacBLOCK_TIME_WAITING_FOR_INPUT );
-			}
-
 		} while (p == NULL);
-
 		/* points to packet payload, which starts with an Ethernet header */
 		ethhdr = p->payload;
-
 		switch (htons(ethhdr->type)) {
 		/* IP or ARP packet? */
-
 		case ETHTYPE_IP:
 		case ETHTYPE_ARP:
-
 			/* full packet send to tcpip_thread to process */
 			if (netif->input(p, netif) != ERR_OK) {
 				LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_input: IP input error\n"));
@@ -366,7 +345,6 @@ static void ethernetif_input(void *pParams) {
 				p = NULL;
 			}
 			break;
-
 		default:
 			pbuf_free(p);
 			p = NULL;
@@ -581,7 +559,7 @@ portBASE_TYPE xEthInitialise(void) {
 
 //#ifdef CHECKSUM_BY_HARDWARE
 		/* Enable the checksum insertion for the Tx frames */
-		ETH_DMATxDescChecksumInsertionConfig(&xTxDescriptor, ETH_DMATxDesc_ChecksumTCPUDPICMPFull);
+		//ETH_DMATxDescChecksumInsertionConfig(&xTxDescriptor, ETH_DMATxDesc_ChecksumTCPUDPICMPFull);
 //#endif
 
 		/* Switch on the interrupts in the NVIC. */
@@ -592,7 +570,7 @@ portBASE_TYPE xEthInitialise(void) {
 		NVIC_Init(&xNVICInit);
 
 		/* Buffers and descriptors are all set up, now enable the MAC. */
-		ETH_Start();
+		//ETH_Start();
 
 		/* Let the DMA know there are Rx descriptors available. */
 		prvRxDescriptorAvailable();
@@ -718,19 +696,15 @@ static unsigned char *prvGetNextBuffer(void) {
 void vMAC_ISR(void) {
 	unsigned long ulStatus;
 	long xHigherPriorityTaskWoken = pdFALSE;
-
 	/* What caused the interrupt? */
 	ulStatus = ETH->DMASR;
-
 	/* Clear everything before leaving. */
 	ETH->DMASR = ulStatus;
-
 	if (ulStatus & ETH_DMA_IT_R) {
 		/* Data was received.  Ensure the uIP task is not blocked as data has
 		 arrived. */
-		xSemaphoreGiveFromISR( s_xSemaphore, &xHigherPriorityTaskWoken );
+		xSemaphoreGiveFromISR( ETH_RX_Sem, &xHigherPriorityTaskWoken );
 	}
-
 	if (ulStatus & ETH_DMA_IT_T) {
 		/* Data was transmitted, ready to transmit again */
 		s_tx_ready = 1;
@@ -802,7 +776,7 @@ unsigned char vSendMACData(unsigned short usDataLen) {
 	/* s_lwip_out_buf is being sent by the Tx descriptor.  Allocate a new buffer. */
 	//TODO: It causes problems under load. It  seems it is not thread safe.
 	s_lwip_out_buf = prvGetNextBuffer();
-	vTaskDelay(10);
+	vTaskDelay(netifBUFFER_WAIT_DELAY);
 	return res;
 }
 
