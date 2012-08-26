@@ -45,7 +45,7 @@ int main( void )
 			configMINIMAL_STACK_SIZE * 10,
 			NULL, mainTaskPriority, NULL );
 
-	//sys_thread_new("ECHO",EchoServer,(void*)NULL, 600, configMAX_PRIORITIES); /// low priority task
+	sys_thread_new("ECHO",EchoServer,(void*)NULL, 1800, mainTaskPriority); /// low priority task
 
 	/* Start the scheduler. */
 	vTaskStartScheduler();
@@ -58,16 +58,16 @@ int main( void )
 portTASK_FUNCTION( EchoServer, pvParameters ){
         struct netconn *pxTCPListener, *pxNewConnection;
         pxTCPListener = netconn_new( NETCONN_TCP );
-        struct ip_addr addr;
-    	//IP4_ADDR( &addr, 192, 168, 1, 1 );
-        netconn_bind(pxTCPListener, &addr, 23 );
-        netconn_listen( pxTCPListener );
-
+        netconn_bind(pxTCPListener, NULL, 23 );
+        netconn_listen(pxTCPListener );
         for( ;; ){
                 err_t error = netconn_accept(pxTCPListener,&pxNewConnection);
                 if(error == ERR_OK){
+//                	while(1)
                         EchoRequest(pxNewConnection);
                 }
+                netconn_close(pxNewConnection);
+                netconn_delete(pxNewConnection);
         }
 }
 
@@ -75,14 +75,15 @@ void EchoRequest( struct netconn *pxNetCon ) {
         struct netbuf *pxRxBuffer;
         portCHAR *pcRxString;
         unsigned portSHORT usLength;
-
         netconn_recv( pxNetCon, &pxRxBuffer);
         if ( pxRxBuffer != NULL ){
                 netbuf_data( pxRxBuffer, ( void * ) &pcRxString, &usLength );
                 if (  pcRxString != NULL){
                         netconn_write( pxNetCon, pcRxString, (u16_t) usLength, NETCONN_COPY );
+                        netconn_write( pxNetCon, "Hello Internet!\n", (u16_t) 16, NETCONN_COPY);
+                        printf("REC: %s",pcRxString);
                 }
-        netbuf_delete( pxRxBuffer );
+                netbuf_delete( pxRxBuffer );
         }
 }
 
