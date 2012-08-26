@@ -80,19 +80,19 @@
  *----------------------------------------------------------*/
 
 /* MAC address configuration. */
-#define configMAC_ADDR0	0x00
-#define configMAC_ADDR1	0x12
-#define configMAC_ADDR2	0x13
-#define configMAC_ADDR3	0x10
-#define configMAC_ADDR4	0x15
-#define configMAC_ADDR5	0x11
+#define configMAC_ADDR0		0x00
+#define configMAC_ADDR1		0x12
+#define configMAC_ADDR2		0x13
+#define configMAC_ADDR3		0x10
+#define configMAC_ADDR4		0x15
+#define configMAC_ADDR5		0x11
 
 
 #define GCC_ARMCM3
-
-#define xPortPendSVHandler PendSV_Handler
-#define xPortSysTickHandler SysTick_Handler
-#define vPortSVCHandler SVC_Handler
+/* Set up interrupt hooks. */
+#define xPortPendSVHandler 		PendSV_Handler
+#define xPortSysTickHandler 	SysTick_Handler
+#define vPortSVCHandler 		SVC_Handler
 
 #define configUSE_PREEMPTION		1
 #define configUSE_IDLE_HOOK			0
@@ -102,7 +102,7 @@
 #define configMAX_PRIORITIES		( ( unsigned portBASE_TYPE ) 8 )
 #define configMINIMAL_STACK_SIZE	( ( unsigned short ) 128 )
 #define configTOTAL_HEAP_SIZE		( ( size_t ) ( 30 * 1024 ) )
-#define configMAX_TASK_NAME_LEN		( 16 )
+#define configMAX_TASK_NAME_LEN		( 8 )
 #define configUSE_TRACE_FACILITY	0
 #define configUSE_16_BIT_TICKS		0
 #define configIDLE_SHOULD_YIELD		1

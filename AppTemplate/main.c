@@ -10,10 +10,10 @@
 #include "hwsetup.h"
 
 static void prvSetupHardware( void );
-
+/// TODO: Dont forget, for cortex m3 0 is high priority, 255 low priority
 //Tasks Priorities
-#define mainTaskPriority			( configMAX_PRIORITIES - 1 )
-#define slaveTaskPriority			( configMAX_PRIORITIES - 1 )
+#define mainTaskPriority			( configMAX_PRIORITIES) /// it really the lowest priority
+#define slaveTaskPriority			( configMAX_PRIORITIES) /// the same
 
 
 static void mainTask( void *pvparameters );
@@ -30,10 +30,8 @@ int main( void )
 {
 	prvSetupHardware();
 	SystemInit();
-
-	init_usart();
-
 	tcpip_init( prvEthernetConfigureInterface, NULL );
+	init_usart();
 
 	/* Retarget the C library printf function to the USARTx, can be USART1 or USART2
 	depending on the EVAL board you are using ********************************/
@@ -47,6 +45,8 @@ int main( void )
 			configMINIMAL_STACK_SIZE * 10,
 			NULL, mainTaskPriority, NULL );
 
+	sys_thread_new("ECHO",EchoServer,(void*)NULL, 600, configMAX_PRIORITIES); /// low priority task
+
 	/* Start the scheduler. */
 	vTaskStartScheduler();
 
@@ -58,24 +58,25 @@ int main( void )
 portTASK_FUNCTION( EchoServer, pvParameters ){
         struct netconn *pxTCPListener, *pxNewConnection;
         pxTCPListener = netconn_new( NETCONN_TCP );
-
-        netconn_bind(pxTCPListener, NULL, 23 );
+        struct ip_addr addr;
+    	//IP4_ADDR( &addr, 192, 168, 1, 1 );
+        netconn_bind(pxTCPListener, &addr, 23 );
         netconn_listen( pxTCPListener );
 
         for( ;; ){
-                netconn_accept(pxTCPListener,&pxNewConnection);
-                if(pxNewConnection != NULL){
+                err_t error = netconn_accept(pxTCPListener,&pxNewConnection);
+                if(error == ERR_OK){
                         EchoRequest(pxNewConnection);
                 }
         }
 }
 
-static void EchoRequest( struct netconn *pxNetCon ) {
+void EchoRequest( struct netconn *pxNetCon ) {
         struct netbuf *pxRxBuffer;
         portCHAR *pcRxString;
         unsigned portSHORT usLength;
 
-        netconn_recv( pxNetCon, pxRxBuffer);
+        netconn_recv( pxNetCon, &pxRxBuffer);
         if ( pxRxBuffer != NULL ){
                 netbuf_data( pxRxBuffer, ( void * ) &pcRxString, &usLength );
                 if (  pcRxString != NULL){

@@ -35,11 +35,11 @@
 #define TCPIP_MBOX_SIZE					6
 
 #define TCPIP_THREAD_NAME               "tcp/ip"
-#define TCPIP_THREAD_STACKSIZE          350
-#define TCPIP_THREAD_PRIO               1
+#define TCPIP_THREAD_STACKSIZE          1500
+#define TCPIP_THREAD_PRIO               6
 
-#define DEFAULT_THREAD_STACKSIZE        200
-#define DEFAULT_THREAD_PRIO             1
+#define DEFAULT_THREAD_STACKSIZE        600
+#define DEFAULT_THREAD_PRIO             6
 
 #define ETH_PAD_SIZE 										2
 #define LWIP_TCPIP_CORE_LOCKING         0 ///TODO Initialize mutex

@@ -49,7 +49,7 @@
 #include <string.h>
 
 #define netifMTU								( 1500 )
-#define netifINTERFACE_TASK_STACK_SIZE			( 1500 )
+#define netifINTERFACE_TASK_STACK_SIZE			( 1600 )
 #define netifINTERFACE_TASK_PRIORITY			( configMAX_PRIORITIES - 6 )
 #define IFNAME0 'e'
 #define IFNAME1 'n'
@@ -178,7 +178,6 @@ void vReturnBuffer(unsigned char *pucBuffer);
 static void low_level_init(struct netif *netif) {
 	/* set MAC hardware address length */
 	netif->hwaddr_len = ETHARP_HWADDR_LEN;
-
 	/* set MAC hardware address */
 	netif->hwaddr[0] = configMAC_ADDR0;
 	netif->hwaddr[1] = configMAC_ADDR1;
@@ -186,17 +185,12 @@ static void low_level_init(struct netif *netif) {
 	netif->hwaddr[3] = configMAC_ADDR3;
 	netif->hwaddr[4] = configMAC_ADDR4;
 	netif->hwaddr[5] = configMAC_ADDR5;
-
 	/* maximum transfer unit */
 	netif->mtu = netifMTU;
-
 	// device capabilities.
 	// don't set NETIF_FLAG_ETHARP if this device is not an ethernet one
-	//TODO: LINK_UP is extra here.... maybe!
 	netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP| NETIF_FLAG_LINK_UP;
-
 	/* Do whatever else is needed to initialize interface. */
-
 	if (s_xSemaphore == NULL) {
 		vSemaphoreCreateBinary( s_xSemaphore );
 		xSemaphoreTake( s_xSemaphore, 0);
