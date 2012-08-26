@@ -45,7 +45,7 @@ int main( void )
 			configMINIMAL_STACK_SIZE * 10,
 			NULL, mainTaskPriority, NULL );
 
-	sys_thread_new("ECHO",EchoServer,(void*)NULL, 600, configMAX_PRIORITIES); /// low priority task
+	//sys_thread_new("ECHO",EchoServer,(void*)NULL, 600, configMAX_PRIORITIES); /// low priority task
 
 	/* Start the scheduler. */
 	vTaskStartScheduler();
@@ -90,28 +90,17 @@ void EchoRequest( struct netconn *pxNetCon ) {
 static struct netif s_EMAC_if;
 static void prvEthernetConfigureInterface(void * param)
 {
-struct ip_addr xIpAddr, xNetMast, xGateway;
-extern err_t ethernetif_init( struct netif *netif );
-
+	struct ip_addr xIpAddr, xNetMast, xGateway;
+	extern err_t ethernetif_init( struct netif *netif );
 	/* Parameters are not used - suppress compiler error. */
 	( void ) param;
-
 	/* Create and configure the EMAC interface. */
 	IP4_ADDR( &xIpAddr, 192, 168, 1, 1 );
 	IP4_ADDR( &xNetMast, 255, 255, 255, 0 );
 	IP4_ADDR( &xGateway, 192, 168, 1, 71 );
 	netif_add( &s_EMAC_if, &xIpAddr, &xNetMast, &xGateway, NULL, ethernetif_init, tcpip_input );
-
-
-	/* bring it up */
-
 	// comment this line to use DHCP
 	netif_set_up(&s_EMAC_if);
-
-	// un-comment this line to use DHCP. TODO: the support to DHCP has to be
-	// completed. See the file lwip/src/core/dhcp.c
-	//err_t res = dhcp_start(&s_EMAC_if);
-
 	/* make it the default interface */
 	netif_set_default(&s_EMAC_if);
 }
