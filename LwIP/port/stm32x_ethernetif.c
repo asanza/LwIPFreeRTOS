@@ -32,18 +32,6 @@
 #include <lwip/snmp.h>
 #include <netif/etharp.h>
 
-// ST Library include
-#include "stm32f10x.h"
-#include "misc.h"
-#include <stm32_eth.h>
-#include <stm32f10x_gpio.h>
-#include <stm32f10x_rcc.h>
-
-// FreeRTOS include
-#include "FreeRTOS.h"
-#include "semphr.h"
-#include "task.h"
-
 // Standard library include
 #include <stdio.h>
 #include <string.h>
@@ -51,16 +39,13 @@
 
 #define netifMTU								( 1500 )
 #define netifINTERFACE_TASK_STACK_SIZE			( 600 )
-#define netifINTERFACE_TASK_PRIORITY			( configMAX_PRIORITIES - 6 )
-#define IFNAME0 'e'
-#define IFNAME1 'n'
-#define netifINIT_WAIT							( 100 / portTICK_RATE_MS )
+#define netifINTERFACE_TASK_PRIORITY			( 3 )
+#define IFNAME0 'd'
+#define IFNAME1 'a'
 
 /* The time to block waiting for input. */
 #define emacBLOCK_TIME_WAITING_FOR_INPUT		( ( portTickType ) 100 )
 
-/* The semaphore used by the ISR to wake the lwIP task. */
-extern xSemaphoreHandle ETH_RX_Sem; // imported from bethsetup
 extern unsigned char * s_lwip_in_buf;
 extern unsigned char * s_lwip_out_buf;
 
@@ -89,21 +74,12 @@ static void low_level_init(struct netif *netif) {
 	netif->mtu = netifMTU;
 	// device capabilities.
 	// don't set NETIF_FLAG_ETHARP if this device is not an ethernet one
-	netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
-	/// Create the reception semaphore!.
-	if (ETH_RX_Sem == NULL) {
-		vSemaphoreCreateBinary( ETH_RX_Sem );
-	}
-	/* Initialize the MAC. */
-	while (xEthInitialise() != pdPASS) {
-		vTaskDelay(netifINIT_WAIT);
-	}
+	netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP| NETIF_FLAG_LINK_UP;
+	/// Initialize ethernet board
+	beth_initialize(netif);
 	/* Create the task that handles the EMAC. */
-	xTaskCreate(ethernetif_input, (signed portCHAR *) "ETH_INT",
-			netifINTERFACE_TASK_STACK_SIZE, (void *) netif,
-			netifINTERFACE_TASK_PRIORITY, NULL);
-	ETH_Start(); /// Start eth hardware.
-	netif->flags |= NETIF_FLAG_LINK_UP; /// set link up flag on interface
+	sys_thread_new("ETHIN",ethernetif_input,netif,netifINTERFACE_TASK_STACK_SIZE,
+			netifINTERFACE_TASK_PRIORITY);
 }
 
 /**
@@ -122,27 +98,34 @@ static void low_level_init(struct netif *netif) {
  *       dropped because of memory failure (except for the TCP timers).
  */
 static err_t low_level_output(struct netif *netif, struct pbuf *p) {
+	static sys_sem_t ousem = NULL;
+	if(ousem == NULL)
+		sys_sem_new(&ousem,1);
 	struct pbuf *q;
 	u32_t l = 0;
 	err_t res = ERR_OK;
 #if ETH_PAD_SIZE
 	pbuf_header(p, -ETH_PAD_SIZE); /* drop the padding word */
 #endif
+	sys_sem_wait(&ousem);
+	uint8_t *buffer = (uint8_t*)ETH_GetCurrentTxBuffer();
 	for (q = p; q != NULL; q = q->next) {
 		/* Send the data from the pbuf to the interface, one pbuf at a
 		 time. The size of the data in each pbuf is kept in the ->len
 		 variable. */
-		memcpy(&s_lwip_out_buf[l], (u8_t*) q->payload, q->len);
+		memcpy((uint8_t*) &buffer[l], (uint8_t*) q->payload, q->len);
 		l += q->len;
 	}
-	if ( !vSendMACData(l) )
-		res = ERR_BUF;
+	res = ETH_TxPkt_ChainMode(l);
+//	res = beth_send_buffer((u8_t*)q->payload, q->len);
+//	if ( !vSendMACData(l) )
+//		res = ERR_BUF;
+	sys_sem_signal(&ousem);
 #if ETH_PAD_SIZE
 	pbuf_header(p, ETH_PAD_SIZE); /* reclaim the padding word */
 #endif
 
 	LINK_STATS_INC(link.xmit);
-
 	return res;
 }
 
@@ -155,13 +138,21 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p) {
  *         NULL on memory error
  */
 static struct pbuf *low_level_input(struct netif *netif) {
+	static sys_sem_t insem = NULL;
+	if(insem==NULL)
+		sys_sem_new(&insem,1);
 	struct pbuf *p, *q;
-	u16_t len, l;
-	l = 0;
+	u16_t len;
+	int l = 0;
+	FrameTypeDef frame;
+	uint8_t* buffer;
 	p = NULL;
+	sys_sem_wait(&insem);
+	frame = ETH_RxPkt_ChainMode();
+	buffer = (uint8_t*)frame.buffer;
 	/* Obtain the size of the packet and put it into the "len"
 	 variable. */
-	len = usGetMACRxData();
+	len = frame.length;
 	if (len) {
 #if ETH_PAD_SIZE
 		len += ETH_PAD_SIZE; /* allow room for Ethernet padding */
@@ -178,24 +169,25 @@ static struct pbuf *low_level_input(struct netif *netif) {
 				/* Read enough bytes to fill this pbuf in the chain. The
 				 * available data in the pbuf is given by the q->len
 				 * variable. */
-				memcpy((u8_t*) q->payload, &s_lwip_in_buf[l], q->len);
+				memcpy((uint8_t*) q->payload, (uint8_t*)&buffer[l], q->len);
 				l = l + q->len;
 			}
-
 #if ETH_PAD_SIZE
 			pbuf_header(p, ETH_PAD_SIZE); /* reclaim the padding word */
 #endif
-
 			LINK_STATS_INC(link.recv);
-
 		} else {
-
 			LINK_STATS_INC(link.memerr); LINK_STATS_INC(link.drop);
 
 		} /* End else */
 	} /* End if */
-	vReturnRxBuffer(s_lwip_in_buf);
-	s_lwip_in_buf = 0;
+	frame.descriptor->Status = ETH_DMARxDesc_OWN;
+	sys_sem_signal(&insem);
+	if((ETH->DMASR & ETH_DMASR_RBUS) != (uint32_t) RESET)
+	{
+		ETH->DMASR = ETH_DMASR_RBUS;
+		ETH->DMARPDR = 0;
+	}
 	return p;
 }
 
@@ -211,14 +203,12 @@ static struct pbuf *low_level_input(struct netif *netif) {
 
 void ethernetif_input(void *pParams) {
 	struct netif *netif;
-	struct ethernetif *ethernetif;
 	struct eth_hdr *ethhdr;
 	struct pbuf *p = NULL;
 	netif = (struct netif*) pParams;
-	ethernetif = netif->state;
 	for (;;) {
 		do {
-			xSemaphoreTake( ETH_RX_Sem, portMAX_DELAY );
+			beth_wait_packet();
 			/* move received packet into a new pbuf */
 			p = low_level_input(netif);
 		} while (p == NULL);

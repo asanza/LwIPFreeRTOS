@@ -145,16 +145,5 @@ NVIC value of 255. */
 #define configLIBRARY_KERNEL_INTERRUPT_PRIORITY	 15
 
 
-///*-----------------------------------------------------------
-// * Macros required to setup the timer for the run time stats.
-// *-----------------------------------------------------------*/
-///* The run time stats time base just uses the existing high frequency timer
-//test clock.  All these macros do is clear and return the high frequency
-//interrupt count respectively. */
-//extern unsigned long ulRunTimeStatsClock;
-//#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() ulRunTimeStatsClock = 0
-//#define portGET_RUN_TIME_COUNTER_VALUE() ulRunTimeStatsClock
-
-
 #endif /* FREERTOS_CONFIG_H */
 

@@ -339,12 +339,11 @@ _write (int    file,
 
 //	size_t nChars = 0;
 	uint nChars = 0;
-
 		for (/*Empty */; len > 0; --len)
 		{
 			/* Loop until the end of transmission */
 			while (USART_GetFlagStatus(EVAL_COM1, USART_FLAG_TXE) == RESET);
-			USART_SendData(EVAL_COM1, * ptr++);
+			USART_SendData(EVAL_COM1, *ptr++);
 			++nChars;
 		}
 		return nChars;

@@ -30,8 +30,8 @@ int main( void )
 {
 	prvSetupHardware();
 	SystemInit();
-	tcpip_init( prvEthernetConfigureInterface, NULL );
 	init_usart();
+	tcpip_init( prvEthernetConfigureInterface, NULL );
 
 	/* Retarget the C library printf function to the USARTx, can be USART1 or USART2
 	depending on the EVAL board you are using ********************************/
@@ -120,9 +120,11 @@ static void mainTask( void *pvparameters )
 static void slaveTask( void *pvparameters )
 {
 	STM_EVAL_LEDInit(LED2);
+	STM_EVAL_LEDInit(LED4);
 	while(1)
 	{
 		STM_EVAL_LEDToggle(LED2);
+		//STM_EVAL_LEDToggle(LED4);
 		vTaskDelay(10);
 	}
 }
@@ -219,7 +221,7 @@ void vApplicationStackOverflowHook( xTaskHandle pxTask, signed char *pcTaskName 
 
 	( void ) pxTask;
 	( void ) pcTaskName;
-
+	usart_putstr("Overflow\n");
 	for( ;; )
 	{
 		portNOP();

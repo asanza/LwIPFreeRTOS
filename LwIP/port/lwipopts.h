@@ -32,17 +32,18 @@
 #ifndef __LWIPOPTS_H__
 #define __LWIPOPTS_H__
 
-#define TCPIP_MBOX_SIZE					6
+#define TCPIP_MBOX_SIZE				 6
 
 #define TCPIP_THREAD_NAME               "tcp/ip"
-#define TCPIP_THREAD_STACKSIZE          500
-#define TCPIP_THREAD_PRIO               6
+#define TCPIP_THREAD_STACKSIZE          1500
+#define TCPIP_THREAD_PRIO               3
 
-#define DEFAULT_THREAD_STACKSIZE        500
-#define DEFAULT_THREAD_PRIO             6
+#define DEFAULT_THREAD_STACKSIZE        1500
+#define DEFAULT_THREAD_PRIO             3
 
 #define ETH_PAD_SIZE 										2
 #define LWIP_TCPIP_CORE_LOCKING         0 ///TODO Initialize mutex
+
 //#define LWIP_DEBUG
 //#define DBG_TYPES_ON                    0xff
 

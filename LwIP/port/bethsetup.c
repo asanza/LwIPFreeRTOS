@@ -16,21 +16,18 @@
 #include <semphr.h>
 #include "beth.h"
 
+#include <lwip/err.h>
+
 /// public interface
-
-
-/// internal interface
-static void prvSetupEthGPIO(void);
+#define  ETH_DMARxDesc_FrameLengthShift           16
 /* The number of descriptors to chain together for use by the Rx DMA. */
-#define NUM_RX_DESCRIPTORS		1
-#define NUM_TX_DESCRIPTORS		1
-// Number of buffers
-#define NUM_RX_BUFFERS			2
-#define NUM_TX_BUFFERS			1
+#define NUM_RX_DESCRIPTORS		2   ///  one descriptor for each buffer.
+#define NUM_TX_DESCRIPTORS		1   ///  one descriptor for each buffer.
+// Number of buffers /// descriptor are chained so a frame can expand two buffers
+#define NUM_RX_BUFFERS			2   /// set two rx buffers (frame max 3000bytes)
+#define NUM_TX_BUFFERS			1	/// set two tx buffers
 /// ETH frame lenght
 #define MAX_PACKET_SIZE			1520
-/* ...and don't look more than this many times. */
-#define netifBUFFER_WAIT_ATTEMPTS				( 9 )
 
 /* Allocate the Rx and descriptors used by the DMA. */
 static ETH_DMADESCTypeDef xRxDescriptors[NUM_RX_DESCRIPTORS] __attribute__((aligned(4)));
@@ -38,11 +35,13 @@ static ETH_DMADESCTypeDef xTxDescriptors[NUM_TX_DESCRIPTORS] __attribute__((alig
 /* Allocate separated buffers for receive and transmit data*/
 static unsigned char rxMACBuffers[NUM_RX_BUFFERS][MAX_PACKET_SIZE] __attribute__((aligned(4)));
 static unsigned char txMACBuffers[NUM_TX_BUFFERS][MAX_PACKET_SIZE] __attribute__((aligned(4)));
-/* Each ucBufferInUse index corresponds to a position in the same index in the
- ucMACBuffers array.  If the index contains a 1 then the buffer within
- ucMACBuffers is in use, if it contains a 0 then the buffer is free. */
-static unsigned char rxBufferInUse[NUM_RX_BUFFERS] = { 0 };
-static unsigned char txBufferInUse[NUM_TX_BUFFERS] = { 0 };
+
+extern ETH_DMADESCTypeDef *DMATxDescToSet;
+extern ETH_DMADESCTypeDef *DMARxDescToGet;
+
+/// internal interface
+static void beth_setup_gpio(void);
+static portBASE_TYPE beth_init_eth(unsigned char* ucMACAddress);
 
 /* If no buffers are available, then wait this long before looking again.... */
 #define netifBUFFER_WAIT_DELAY					( 100 / portTICK_RATE_MS )
@@ -50,184 +49,69 @@ static unsigned char txBufferInUse[NUM_TX_BUFFERS] = { 0 };
 /* The semaphore used by the ISR to wake the lwIP task. */
 xSemaphoreHandle ETH_RX_Sem = NULL;
 
-/* Flag to indicate transmit machine is ready to fire off an outgoing packet */
-static char s_tx_ready;
+#include <../../AppTemplate/stm3210c_eval.h>
+#include <../../AppTemplate/hwsetup.h>
 
-/* The lwip_buffer for Rx packet is not a fixed array, but instead gets pointed to the buffers
- allocated within this file. */
-unsigned char * s_lwip_in_buf;
+#define netifINIT_WAIT	( 100 / portTICK_RATE_MS )
 
-/* The lwip_buffer for Tx packet is not a fixed array, but instead gets pointed to the buffers
- allocated within this file. */
-unsigned char * s_lwip_out_buf;
-
-/* Index to the Rx descriptor to inspect next when looking for a received
- packet. */
-static unsigned long s_ulNextDescriptor;
-
-
-/**
- * Initialize all IO and peripherals required for Ethernet communication.
- *
- * @return pdSUCCESS if success, pdFAIL to signal some error.
- */
-portBASE_TYPE xEthInitialise(void) {
-	static ETH_InitTypeDef xEthInit; /* Static so as not to take up too much stack space. */
-	NVIC_InitTypeDef xNVICInit;
-	const unsigned char ucMACAddress[] = { configMAC_ADDR0, configMAC_ADDR1, configMAC_ADDR2,
-			configMAC_ADDR3, configMAC_ADDR4, configMAC_ADDR5 };
-	portBASE_TYPE xReturn;
-	unsigned long ul;
-
-	/* Start with things in a safe known state. */
-	ETH_DeInit();
-	for (ul = 0; ul < NUM_RX_DESCRIPTORS; ul++) {
-		ETH_DMARxDescReceiveITConfig(&(xRxDescriptors[ul]), DISABLE);
+err_t beth_initialize(struct netif *netif)
+{
+	STM_EVAL_LEDInit(LED3);
+	/// Create the reception semaphore!.
+	if (ETH_RX_Sem == NULL) {
+		vSemaphoreCreateBinary( ETH_RX_Sem );
+		xSemaphoreTake(ETH_RX_Sem, 1);
 	}
-	/* Enable ETHERNET clock  */
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_ETH_MAC | RCC_AHBPeriph_ETH_MAC_Tx |
-					RCC_AHBPeriph_ETH_MAC_Rx, ENABLE);
-	/* Use MII mode. */
-	GPIO_ETH_MediaInterfaceConfig(GPIO_ETH_MediaInterface_RMII);
-	/* Enable GPIOs clocks */
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA |	RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC |
-					RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE| RCC_APB2Periph_AFIO, ENABLE);
-	/* Get HSE clock = 25MHz on PA8 pin(MCO) */
-	/* set PLL3 clock output to 50MHz (25MHz /5 *10 =50MHz) */
-	RCC_PLL3Config(RCC_PLL3Mul_10);
-	/* Enable PLL3 */
-	RCC_PLL3Cmd(ENABLE);
-	/* Wait till PLL3 is ready */
-	while (RCC_GetFlagStatus(RCC_FLAG_PLL3RDY) == RESET);
-	/* Get clock PLL3 clock on PA8 pin */
-	RCC_MCOConfig(RCC_MCO_PLL3CLK);
-	/* Configure all the GPIO as required for MAC/PHY interfacing. */
-	prvSetupEthGPIO();
-	/* Reset the peripheral. */
-	ETH_SoftwareReset();
-	while (ETH_GetSoftwareResetStatus() == SET);
-	/* Set the MAC address. */
-	ETH_MACAddressConfig(ETH_MAC_Address0, (unsigned char *) ucMACAddress);
-	/* Initialise using the whopping big structure.  Code space could be saved
-	 by making this a const struct, however that would mean changes to the
-	 structure within the library header files could break the code, so for now
-	 just set everything manually at run time. */
-	xEthInit.ETH_AutoNegotiation = ETH_AutoNegotiation_Enable;
-	xEthInit.ETH_Watchdog = ETH_Watchdog_Disable;
-	xEthInit.ETH_Jabber = ETH_Jabber_Disable;
-	//xEthInit.ETH_JumboFrame = ETH_JumboFrame_Disable;
-	xEthInit.ETH_InterFrameGap = ETH_InterFrameGap_96Bit;
-	xEthInit.ETH_CarrierSense = ETH_CarrierSense_Enable;
-	xEthInit.ETH_Speed = ETH_Speed_10M;
-	xEthInit.ETH_ReceiveOwn = ETH_ReceiveOwn_Disable;
-	xEthInit.ETH_LoopbackMode = ETH_LoopbackMode_Disable;
-	xEthInit.ETH_Mode = ETH_Mode_HalfDuplex;
-	xEthInit.ETH_ChecksumOffload = ETH_ChecksumOffload_Disable;
-	xEthInit.ETH_RetryTransmission = ETH_RetryTransmission_Disable;
-	xEthInit.ETH_AutomaticPadCRCStrip = ETH_AutomaticPadCRCStrip_Disable;
-	xEthInit.ETH_BackOffLimit = ETH_BackOffLimit_10;
-	xEthInit.ETH_DeferralCheck = ETH_DeferralCheck_Disable;
-	xEthInit.ETH_ReceiveAll = ETH_ReceiveAll_Enable;
-	xEthInit.ETH_SourceAddrFilter = ETH_SourceAddrFilter_Disable;
-	xEthInit.ETH_PassControlFrames
-			= ETH_PassControlFrames_ForwardPassedAddrFilter;
-	xEthInit.ETH_BroadcastFramesReception
-			= ETH_BroadcastFramesReception_Disable;
-	xEthInit.ETH_DestinationAddrFilter = ETH_DestinationAddrFilter_Normal;
-	xEthInit.ETH_PromiscuousMode = ETH_PromiscuousMode_Disable;
-	xEthInit.ETH_MulticastFramesFilter = ETH_MulticastFramesFilter_Perfect;
-	xEthInit.ETH_UnicastFramesFilter = ETH_UnicastFramesFilter_Perfect;
-	xEthInit.ETH_HashTableHigh = 0x0;
-	xEthInit.ETH_HashTableLow = 0x0;
-	xEthInit.ETH_PauseTime = 0x0;
-	xEthInit.ETH_ZeroQuantaPause = ETH_ZeroQuantaPause_Disable;
-	xEthInit.ETH_PauseLowThreshold = ETH_PauseLowThreshold_Minus4;
-	xEthInit.ETH_UnicastPauseFrameDetect = ETH_UnicastPauseFrameDetect_Disable;
-	xEthInit.ETH_ReceiveFlowControl = ETH_ReceiveFlowControl_Disable;
-	xEthInit.ETH_TransmitFlowControl = ETH_TransmitFlowControl_Disable;
-	xEthInit.ETH_VLANTagComparison = ETH_VLANTagComparison_16Bit;
-	xEthInit.ETH_VLANTagIdentifier = 0x0;
-	xEthInit.ETH_DropTCPIPChecksumErrorFrame
-			= ETH_DropTCPIPChecksumErrorFrame_Disable;
-	xEthInit.ETH_ReceiveStoreForward = ETH_ReceiveStoreForward_Enable;
-	xEthInit.ETH_FlushReceivedFrame = ETH_FlushReceivedFrame_Disable;
-	xEthInit.ETH_TransmitStoreForward = ETH_TransmitStoreForward_Enable;
-	xEthInit.ETH_TransmitThresholdControl
-			= ETH_TransmitThresholdControl_64Bytes;
-	xEthInit.ETH_ForwardErrorFrames = ETH_ForwardErrorFrames_Disable;
-	xEthInit.ETH_ForwardUndersizedGoodFrames
-			= ETH_ForwardUndersizedGoodFrames_Disable;
-	xEthInit.ETH_ReceiveThresholdControl = ETH_ReceiveThresholdControl_64Bytes;
-	xEthInit.ETH_SecondFrameOperate = ETH_SecondFrameOperate_Disable;
-	xEthInit.ETH_AddressAlignedBeats = ETH_AddressAlignedBeats_Enable;
-	xEthInit.ETH_FixedBurst = ETH_FixedBurst_Disable;
-	xEthInit.ETH_RxDMABurstLength = ETH_RxDMABurstLength_1Beat;
-	xEthInit.ETH_TxDMABurstLength = ETH_TxDMABurstLength_1Beat;
-	xEthInit.ETH_DescriptorSkipLength = 0x0;
-	xEthInit.ETH_DMAArbitration = ETH_DMAArbitration_RoundRobin_RxTx_1_1;
-	xReturn = ETH_Init(&xEthInit, PHY_ADDRESS);
-	/* Check a link was established. */
-	if (xReturn != pdFAIL) {
-		/* Rx and Tx interrupts are used. */
-		ETH_DMAITConfig(ETH_DMA_IT_NIS | ETH_DMA_IT_R | ETH_DMA_IT_T, ENABLE);
-
-		/* Only a single Tx descriptor is used.  For now it is set to use an Rx
-		 buffer, but will get updated to point to where ever s_lwip_buf is
-		 pointing prior to its use. */
-		ETH_DMATxDescChainInit(xTxDescriptors, (void *) txMACBuffers, NUM_TX_DESCRIPTORS);
-		ETH_DMARxDescChainInit(xRxDescriptors, (void *) rxMACBuffers, NUM_RX_DESCRIPTORS);
-		for (ul = 0; ul < NUM_RX_DESCRIPTORS; ul++) {
-			/* Ensure received data generates an interrupt. */
-			ETH_DMARxDescReceiveITConfig(&(xRxDescriptors[ul]), ENABLE);
-			/* Fix up the addresses used by the descriptors.
-			 The way ETH_DMARxDescChainInit() is not compatible with the buffer
-			 declarations in this file. */
-			xRxDescriptors[ul].Buffer1Addr = (unsigned long) &(rxMACBuffers[ul][0]);
-			/* Mark the buffer used by this descriptor as in use. */
-			//rxBufferInUse[ul] = pdTRUE;
-		}
-		for (ul = 0; ul < NUM_TX_DESCRIPTORS; ul++) {
-			/* Ensure received data generates an interrupt. */
-			//ETH_DMATxDescTransmitITConfig(&(xTxDescriptors[ul]), ENABLE);
-			/* Fix up the addresses used by the descriptors.
-			 The way ETH_DMARxDescChainInit() is not compatible with the buffer
-			 declarations in this file. */
-			xTxDescriptors[ul].Buffer1Addr = (unsigned long) &(txMACBuffers[ul][0]);
-			/* Mark the buffer used by this descriptor as in use. */
-			//txBufferInUse[ul] = pdTRUE;
-		}
-
-		/* When receiving data, start at the first descriptor. */
-		s_ulNextDescriptor = 0;
-		/* Initialize s_lwip_buf to ensure it points somewhere valid. */
-		s_lwip_in_buf = 0;
-		s_lwip_out_buf = prvGetNextTXBuffer();
-		/* Mark the tx machine as ready */
-		s_tx_ready = 1;
-		/* SendCount must be initialized to 2 to ensure the Tx descriptor looks
-		 as if its available (as if it has already been sent twice. */
-		//xTxDescriptor.SendCount = 2;
-		// TODO: Enable hardware checksums
-		/* Switch on the interrupts in the NVIC. */
-		xNVICInit.NVIC_IRQChannel = ETH_IRQn;
-		xNVICInit.NVIC_IRQChannelPreemptionPriority = configLIBRARY_KERNEL_INTERRUPT_PRIORITY;
-		xNVICInit.NVIC_IRQChannelSubPriority = 0;
-		xNVICInit.NVIC_IRQChannelCmd = ENABLE;
-		NVIC_Init(&xNVICInit);
-
-		/* Let the DMA know there are Rx descriptors available. */
-		ETH->DMARPDR = 0;
-		/*Disable interrupts*/
-		//NVIC_DisableIRQ(ETH_IRQn);
+	/// load macadress;
+	unsigned char ucMACAddress[6];
+	ucMACAddress[0] = netif->hwaddr[0];
+	ucMACAddress[1] = netif->hwaddr[1];
+	ucMACAddress[2] = netif->hwaddr[2];
+	ucMACAddress[3] = netif->hwaddr[3];
+	ucMACAddress[4] = netif->hwaddr[4];
+	ucMACAddress[5] = netif->hwaddr[5];
+	/* Initialize the MAC. */
+	while (beth_init_eth(ucMACAddress) != pdPASS) {
+		vTaskDelay(netifINIT_WAIT);
 	}
+	return ERR_OK;
+}
 
-	return xReturn;
+err_t beth_wait_packet()
+{
+	/// wait for next packet. The ISR gives this
+	/// semaphore when a new packet arrive.
+	xSemaphoreTake( ETH_RX_Sem, portMAX_DELAY );
+	return ERR_OK;
+}
+
+void ETH_IRQHandler()
+{
+	long xHigherPriorityTaskWoken = pdFALSE;
+	/// give away taked semaphore. Used to inform the ethernet_input
+	/// thread that new data is available
+	/// give away only if frame received interrupt was triggered
+	if(ETH_GetDMAFlagStatus(ETH_DMA_FLAG_R) == SET)
+	{
+		xSemaphoreGiveFromISR( ETH_RX_Sem, &xHigherPriorityTaskWoken );
+		ETH_DMAClearITPendingBit(ETH_DMA_IT_R);
+	}
+	if(ETH_GetDMAFlagStatus(ETH_DMA_FLAG_T)==SET)
+	{
+		xHigherPriorityTaskWoken = pdFALSE;
+	}
+	if(ETH_GetDMAFlagStatus(ETH_DMA_FLAG_TBU)==SET)
+	{
+		xHigherPriorityTaskWoken = pdFALSE;
+	}
+	ETH_DMAClearITPendingBit(ETH_DMA_IT_NIS);
+	portEND_SWITCHING_ISR( xHigherPriorityTaskWoken );
 }
 
 /**
  * Configure the IO for Ethernet use.
  */
-static void prvSetupEthGPIO(void) {
+static void beth_setup_gpio(void) {
 	GPIO_InitTypeDef GPIO_InitStructure;
 
 	/* ETHERNET pins configuration */
@@ -310,197 +194,176 @@ static void prvSetupEthGPIO(void) {
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
 
-
-unsigned char *prvGetNextRXBuffer(void) {
-	portBASE_TYPE x;
-	unsigned char *ucReturn = NULL;
-	while (ucReturn == NULL) {
-		/* Look through the buffers to find one that is not in use by
-		 anything else. */
-		vTaskSuspendAll();
-		for (x = 0; x < NUM_RX_BUFFERS; x++) {
-			if (rxBufferInUse[x] == pdFALSE) {
-				rxBufferInUse[x] = pdTRUE;
-				ucReturn = &(rxMACBuffers[x][0]);
-				break;
-			}
-		}
-		xTaskResumeAll();
-
-		/* Was a buffer found? */
-		if (ucReturn == NULL) {
-			/* Wait then look again. */
-			vTaskDelay(netifBUFFER_WAIT_DELAY);
-		}
-	}
-	return ucReturn;
-}
-
-unsigned char *prvGetNextTXBuffer(void) {
-	portBASE_TYPE x;
-	unsigned char *ucReturn = NULL;
-
-	while (ucReturn == NULL) {
-		/* Look through the buffers to find one that is not in use by
-		 anything else. */
-		vTaskSuspendAll();
-		for (x = 0; x < NUM_TX_BUFFERS; x++) {
-			if (txBufferInUse[x] == pdFALSE) {
-				txBufferInUse[x] = pdTRUE;
-				ucReturn = &(txMACBuffers[x][0]);
-				break;
-			}
-		}
-		xTaskResumeAll();
-
-		/* Was a buffer found? */
-		if (ucReturn == NULL) {
-			/* Wait then look again. */
-			vTaskDelay(netifBUFFER_WAIT_DELAY);
-		}
-	}
-	return ucReturn;
-}
-
-void vMAC_ISR(void) {
-	unsigned long ulStatus;
-	long xHigherPriorityTaskWoken = pdFALSE;
-	/* What caused the interrupt? */
-	ulStatus = ETH->DMASR;
-	/* Clear everything before leaving. */
-	ETH->DMASR = ulStatus;
-	if (ulStatus & ETH_DMA_IT_R) {
-		/* Data was received.  Ensure the uIP task is not blocked as data has
-		 arrived. */
-		xSemaphoreGiveFromISR( ETH_RX_Sem, &xHigherPriorityTaskWoken );
-	}
-	if (ulStatus & ETH_DMA_IT_T) {
-		/* Data was transmitted, ready to transmit again */
-		s_tx_ready = 1;
-		/* The Tx buffer is no longer required. */
-		vReturnTxBuffer((unsigned char *) xTxDescriptors[0].Buffer1Addr);
-	}
-
-	/* If xSemaphoreGiveFromISR() unblocked a task, and the unblocked task has
-	 a higher priority than the currently executing task, then
-	 xHigherPriorityTaskWoken will have been set to pdTRUE and this ISR should
-	 return directly to the higher priority unblocked task. */
-	portEND_SWITCHING_ISR( xHigherPriorityTaskWoken );
-}
-
-void vReturnTxBuffer(unsigned char *pucBuffer) {
+/**
+ * Initialize all IO and peripherals required for Ethernet communication.
+ *
+ * @return pdSUCCESS if success, pdFAIL to signal some error.
+ */
+portBASE_TYPE beth_init_eth(unsigned char* ucMACAddress) {
+	static ETH_InitTypeDef xEthInit; /* Static so as not to take up too much stack space. */
+	NVIC_InitTypeDef xNVICInit;
+	portBASE_TYPE xReturn;
 	unsigned long ul;
 
-	/* Mark a buffer as free for use. */
-	for (ul = 0; ul < NUM_TX_BUFFERS; ul++) {
-		if (txMACBuffers[ul] == pucBuffer) {
-			txBufferInUse[ul] = pdFALSE;
-			break;
+	/* Enable ETHERNET clock  */
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_ETH_MAC | RCC_AHBPeriph_ETH_MAC_Tx |
+					RCC_AHBPeriph_ETH_MAC_Rx, ENABLE);
+	/* Use MII mode. */
+	GPIO_ETH_MediaInterfaceConfig(GPIO_ETH_MediaInterface_RMII);
+	/* Enable GPIOs clocks */
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC |
+					RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE| RCC_APB2Periph_AFIO, ENABLE);
+	/* Get HSE clock = 25MHz on PA8 pin(MCO) */
+	beth_setup_gpio();
+	/* set PLL3 clock output to 50MHz (25MHz /5 *10 =50MHz) */
+	RCC_PLL3Config(RCC_PLL3Mul_10);
+	/* Enable PLL3 */
+	RCC_PLL3Cmd(ENABLE);
+	/* Wait till PLL3 is ready */
+	while (RCC_GetFlagStatus(RCC_FLAG_PLL3RDY) == RESET);
+	/* Get clock PLL3 clock on PA8 pin */
+	RCC_MCOConfig(RCC_MCO_PLL3CLK);
+	/* Start with things in a safe known state. */
+	ETH_DeInit();
+	/* Reset the peripheral. */
+	ETH_SoftwareReset();
+	while (ETH_GetSoftwareResetStatus() == SET);
+	/* Set the MAC address. */
+	ETH_MACAddressConfig(ETH_MAC_Address0, (unsigned char *) ucMACAddress);
+	/* Initialise using the whopping big structure.  Code space could be saved
+	 by making this a const struct, however that would mean changes to the
+	 structure within the library header files could break the code, so for now
+	 just set everything manually at run time. */
+	ETH_StructInit(&xEthInit);
+	xEthInit.ETH_AutoNegotiation = ETH_AutoNegotiation_Enable;
+	xEthInit.ETH_Watchdog = ETH_Watchdog_Disable;
+	xEthInit.ETH_Jabber = ETH_Jabber_Disable;
+	xEthInit.ETH_ReceiveOwn = ETH_ReceiveOwn_Disable;
+	xEthInit.ETH_RetryTransmission = ETH_RetryTransmission_Disable;
+	xEthInit.ETH_ReceiveAll = ETH_ReceiveAll_Enable;
+	xEthInit.ETH_PassControlFrames
+			= ETH_PassControlFrames_ForwardPassedAddrFilter;
+	xEthInit.ETH_TxDMABurstLength = ETH_TxDMABurstLength_32Beat;
+	xEthInit.ETH_RxDMABurstLength = ETH_RxDMABurstLength_32Beat;
+	xEthInit.ETH_DMAArbitration = ETH_DMAArbitration_RoundRobin_RxTx_2_1;
+	xEthInit.ETH_DropTCPIPChecksumErrorFrame = ETH_DropTCPIPChecksumErrorFrame_Enable;
+	xEthInit.ETH_ReceiveStoreForward = ETH_ReceiveStoreForward_Enable;
+	xEthInit.ETH_TransmitStoreForward = ETH_TransmitStoreForward_Enable;
+	xReturn = ETH_Init(&xEthInit, PHY_ADDRESS);
+	/* Check a link was established. */
+	if (xReturn != pdFAIL) {
+		/* Rx and Tx interrupts are used. */
+		ETH_DMAITConfig(ETH_DMA_IT_NIS | ETH_DMA_IT_R | ETH_DMA_IT_T, ENABLE);
+		/* Only a single Tx descriptor is used.  For now it is set to use an Rx
+		 buffer, but will get updated to point to where ever s_lwip_buf is
+		 pointing prior to its use. */
+		ETH_DMATxDescChainInit(xTxDescriptors, (void *) txMACBuffers, NUM_TX_DESCRIPTORS);
+		ETH_DMARxDescChainInit(xRxDescriptors, (void *) rxMACBuffers, NUM_RX_DESCRIPTORS);
+		for (ul = 0; ul < NUM_RX_DESCRIPTORS; ul++) {
+			/* Ensure received data generates an interrupt. */
+			ETH_DMARxDescReceiveITConfig(&(xRxDescriptors[ul]), ENABLE);
 		}
+		/* SendCount must be initialized to 2 to ensure the Tx descriptor looks
+		 as if its available (as if it has already been sent twice. */
+		//xTxDescriptor.SendCount = 2;
+		// TODO: Enable hardware checksums
+		/* Switch on the interrupts in the NVIC. */
+		xNVICInit.NVIC_IRQChannel = ETH_IRQn;
+//		xNVICInit.NVIC_IRQChannelPreemptionPriority = configLIBRARY_KERNEL_INTERRUPT_PRIORITY;
+//		xNVICInit.NVIC_IRQChannelSubPriority = 0;
+		xNVICInit.NVIC_IRQChannelCmd = ENABLE;
+		NVIC_Init(&xNVICInit);
+		/* Let the DMA know there are Rx descriptors available. */
+		//ETH->DMARPDR = 0;
+		ETH_Start(); /// Start eth hardware.
 	}
+	return xReturn;
 }
 
-void vReturnRxBuffer(unsigned char *pucBuffer) {
-	unsigned long ul;
-
-	/* Mark a buffer as free for use. */
-	for (ul = 0; ul < NUM_RX_BUFFERS; ul++) {
-		if (rxMACBuffers[ul] == pucBuffer) {
-			rxBufferInUse[ul] = pdFALSE;
-			break;
-		}
-	}
-}
-
-void ETH_IRQHandler()
+u32 ETH_GetCurrentTxBuffer(void)
 {
-	vMAC_ISR();
+	/// return buffer address
+	return DMATxDescToSet->Buffer1Addr;
 }
 
-void DMA2_Channel5_IRQHandler()
+err_t ETH_TxPkt_ChainMode(u16 FrameLength)
 {
-	vMAC_ISR();
+	  /* Check if the descriptor is owned by the ETHERNET DMA (when set) or CPU (when reset) */
+	  //while((DMATxDescToSet->Status & ETH_DMATxDesc_OWN) != (u32)RESET);
+	 if((DMATxDescToSet->Status & ETH_DMATxDesc_OWN) != (u32)RESET)
+		 return ERR_USE;
+
+	  /* Setting the Frame Length: bits[12:0] */
+	  DMATxDescToSet->ControlBufferSize = (FrameLength & ETH_DMATxDesc_TBS1);
+
+	  /* Setting the last segment and first segment bits (in this case a frame is transmitted in one descriptor) */
+	  DMATxDescToSet->Status |= ETH_DMATxDesc_LS | ETH_DMATxDesc_FS;
+
+	  /* Set Own bit of the Tx descriptor Status: gives the buffer back to ETHERNET DMA */
+	  DMATxDescToSet->Status |= ETH_DMATxDesc_OWN;
+
+	  /* When Tx Buffer unavailable flag is set: clear it and resume transmission */
+	  if ((ETH->DMASR & ETH_DMASR_TBUS) != (u32)RESET)
+	  {
+	    /* Clear TBUS ETHERNET DMA flag */
+	    ETH->DMASR = ETH_DMASR_TBUS;
+	    /* Resume DMA transmission*/
+	    ETH->DMATPDR = 0;
+	  }
+	  /* Update the ETHERNET DMA global Tx descriptor with next Tx decriptor */
+	  /* Chained Mode */
+	  /* Selects the next DMA Tx descriptor list for next buffer to send */
+	  DMATxDescToSet = (ETH_DMADESCTypeDef*) (DMATxDescToSet->Buffer2NextDescAddr);
+
+	  /* Return SUCCESS */
+	  return ERR_OK;
 }
 
-unsigned char vSendMACData(unsigned short usDataLen) {
-	unsigned long ulAttempts = 0UL;
-	unsigned char res = 1;
 
-	/* Check to see if the Tx descriptor is free. */
-	while (!s_tx_ready || (xTxDescriptors[0].Status & ETH_DMATxDesc_OWN) == ETH_DMATxDesc_OWN) {
-		/* Wait for the Tx descriptor to become available. */
-		vTaskDelay(netifBUFFER_WAIT_DELAY);
+FrameTypeDef ETH_RxPkt_ChainMode(void)
+{
+  uint32_t framelength = 0;
+  FrameTypeDef frame = {0,0};
 
-		ulAttempts++;
-		if (ulAttempts > netifBUFFER_WAIT_ATTEMPTS) {
-			/* Something has gone wrong as the Tx descriptor is still in use.
-			 Clear it down manually, the data it was sending will probably be
-			 lost. */
-			xTxDescriptors[0].Status &= ~ETH_DMATxDesc_OWN;
-			vReturnTxBuffer((unsigned char *) xTxDescriptors[0].Buffer1Addr);
-			res = 0;
-			break;
-		}
-	}
+  /* Check if the descriptor is owned by the ETHERNET DMA (when set) or CPU (when reset) */
+  if((DMARxDescToGet->Status & ETH_DMARxDesc_OWN) != (uint32_t)RESET)
+  {
+	frame.length = ERR_MEM;
 
-	/* Setup the Tx descriptor for transmission. */
-	s_tx_ready = 0;
-	xTxDescriptors[0].Buffer1Addr = (unsigned long) s_lwip_out_buf;
-	xTxDescriptors[0].ControlBufferSize = (unsigned long) usDataLen;
-	xTxDescriptors[0].Status = ETH_DMATxDesc_OWN | ETH_DMATxDesc_LS
-			| ETH_DMATxDesc_FS | ETH_DMATxDesc_TER | ETH_DMATxDesc_TCH
-			| ETH_DMATxDesc_IC;
-	ETH->DMASR = ETH_DMASR_TBUS;
-	ETH->DMATPDR = 0;
-	/* s_lwip_out_buf is being sent by the Tx descriptor.  Allocate a new buffer. */
-	//TODO: It causes problems under load. It  seems it is not thread safe.
-	s_lwip_out_buf = prvGetNextTXBuffer();
-	vTaskDelay(netifBUFFER_WAIT_DELAY);
-	return res;
-}
+    if ((ETH->DMASR & ETH_DMASR_RBUS) != (uint32_t)RESET)
+    {
+      /* Clear RBUS ETHERNET DMA flag */
+      ETH->DMASR = ETH_DMASR_RBUS;
+      /* Resume DMA reception */
+      ETH->DMARPDR = 0;
+    }
 
-unsigned short usGetMACRxData(void) {
-	unsigned short usReturn;
-	if ((xRxDescriptors[s_ulNextDescriptor].Status & ETH_DMARxDesc_ES) != 0) {
-		/* Error in Rx.  Discard the frame and give it back to the DMA. */
-		xRxDescriptors[s_ulNextDescriptor].Status = ETH_DMARxDesc_OWN;
-		ETH->DMARPDR = 0;
+	/* Return error: OWN bit set */
+    return frame;
+  }
 
-		/* No data to return. */
-		usReturn = 0UL;
+  if(((DMARxDescToGet->Status & ETH_DMARxDesc_ES) == (uint32_t)RESET) &&
+     ((DMARxDescToGet->Status & ETH_DMARxDesc_LS) != (uint32_t)RESET) &&
+     ((DMARxDescToGet->Status & ETH_DMARxDesc_FS) != (uint32_t)RESET))
+  {
+    /* Get the Frame Length of the received packet: substruct 4 bytes of the CRC */
+    framelength = ((DMARxDescToGet->Status & ETH_DMARxDesc_FL) >> ETH_DMARxDesc_FrameLengthShift) - 4;
 
-		/* Start from the next descriptor the next time this function is called. */
-		s_ulNextDescriptor++;
-		if (s_ulNextDescriptor >= NUM_RX_DESCRIPTORS) {
-			s_ulNextDescriptor = 0UL;
-		}
-	} else if ((xRxDescriptors[s_ulNextDescriptor].Status & ETH_DMARxDesc_OWN) == 0) {
-		/* Mark the current buffer as free as s_lwip_in_buf is going to be set to
-		 the buffer that contains the received data. */
-		if (s_lwip_in_buf)
-			vReturnRxBuffer(s_lwip_in_buf);
+	/* Get the addrees of the actual buffer */
+	frame.buffer = DMARxDescToGet->Buffer1Addr;
+  }
+  else
+  {
+    /* Return ERROR */
+    framelength = ERR_MEM;
+  }
+  frame.length = framelength;
+  frame.descriptor = DMARxDescToGet;
 
-		/* Get the received data length	from the top 2 bytes of the Status
-		 word and the data itself. */
-		usReturn = (unsigned short) ((xRxDescriptors[s_ulNextDescriptor].Status & ETH_DMARxDesc_FL) >> 16UL);
-		s_lwip_in_buf = (unsigned char *) (xRxDescriptors[s_ulNextDescriptor].Buffer1Addr);
-
-		/* Allocate a new buffer to the descriptor. */
-		xRxDescriptors[s_ulNextDescriptor].Buffer1Addr = (unsigned long) prvGetNextRXBuffer();
-
-		/* Give the descriptor back to the DMA. */
-		xRxDescriptors[s_ulNextDescriptor].Status = ETH_DMARxDesc_OWN;
-		ETH->DMARPDR = 0;
-
-		/* Start from the next descriptor the next time this function is called. */
-		s_ulNextDescriptor++;
-		if (s_ulNextDescriptor >= NUM_RX_DESCRIPTORS) {
-			s_ulNextDescriptor = 0UL;
-		}
-	} else {
-		/* No received data at all. */
-		usReturn = 0UL;
-	}
-
-	return usReturn;
+  /* Update the ETHERNET DMA global Rx descriptor with next Rx decriptor */
+  /* Chained Mode */
+  /* Selects the next DMA Rx descriptor list for next buffer to read */
+  DMARxDescToGet = (ETH_DMADESCTypeDef*) (DMARxDescToGet->Buffer2NextDescAddr);
+  /* Return Frame */
+  return (frame);
 }

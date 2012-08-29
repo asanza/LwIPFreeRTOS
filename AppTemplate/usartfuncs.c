@@ -8,6 +8,7 @@
 #include "hwsetup.h"
 #include <stdio.h>
 #include <stm32f10x_usart.h>
+
 //#include <stm32_eval.h>
 
 USART_InitTypeDef USART_InitStructure;
@@ -35,4 +36,18 @@ void init_usart()
 
 	printf("USART started... \n");
 
+}
+
+void usart_putchar(char t)
+{
+	while (USART_GetFlagStatus(EVAL_COM1, USART_FLAG_TXE) == RESET);
+	USART_SendData(EVAL_COM1, t);
+};
+
+void usart_putstr(char *str)
+{
+	do
+	{
+		usart_putchar(*str++);
+	}while(*str!='\0');
 }

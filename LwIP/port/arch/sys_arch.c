@@ -139,9 +139,8 @@ err_t sys_mbox_trypost(sys_mbox_t* mbox, void *msg)
 #if SYS_STATS
       lwip_stats.sys.mbox.err++;
 #endif /* SYS_STATS */
-
 	}
-   return result;
+	return result;
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -234,20 +233,17 @@ void sys_mutex_unlock(sys_mutex_t* mutex)
 //  the initial state of the semaphore.
 err_t sys_sem_new(sys_sem_t *sem, u8_t count)
 {
-	vPortEnterCritical();
-	vSemaphoreCreateBinary(*sem);
+	vSemaphoreCreateBinary((*sem));
 	if( NULL == *sem)
 	{
 #if SYS_STATS
       ++lwip_stats.sys.sem.err;
 #endif /* SYS_STATS */
-        vPortExitCritical();
 		return ERR_MEM;
 	}
 	if(count == 0)
 	{
 		xSemaphoreTake(*sem,1);
-		vPortExitCritical();
 	}
 #if SYS_STATS
 	++lwip_stats.sys.sem.used;

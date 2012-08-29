@@ -33,6 +33,7 @@
 #define __CC_H__
 
 #include "cpu.h"
+#include "../../AppTemplate/usart.h"
 
 typedef unsigned   char    u8_t;
 typedef signed     char    s8_t;
@@ -76,7 +77,13 @@ typedef u32_t mem_ptr_t;
 #define PACK_STRUCT_FIELD(x) x
 
 #endif
-
-#define LWIP_PLATFORM_ASSERT(x) do { if(!(x)) while(1); } while(0)
-
+#define U16_F "d"
+#define X16_F "d"
+#define S16_F "d"
+#define X32_F "d"
+#define S32_F "d"
+#define U32_F "d"
+//#define LWIP_PLATFORM_ASSERT(x) do { if(!(x)) while(1); } while(0)
+#define LWIP_PLATFORM_ASSERT(x) usart_putstr(x)
+#define LWIP_PLATFORM_DIAG(message) do{char lbuf[500];lbuf[0]='\0';sprintf(lbuf,message);usart_putstr(lbuf);}while(0);
 #endif /* __CC_H__ */
