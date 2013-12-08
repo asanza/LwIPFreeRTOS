@@ -33,7 +33,7 @@
 #define __CC_H__
 
 #include "cpu.h"
-#include "../../AppTemplate/usart.h"
+#include "../../AppTemplate/src/usart.h"
 
 typedef unsigned   char    u8_t;
 typedef signed     char    s8_t;

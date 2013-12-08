@@ -1,4 +1,4 @@
-target remote 192.168.2.123:3333
+target remote localhost:3333
 monitor reset halt
 load Debug/AppTemplate.elf
 monitor reset init
