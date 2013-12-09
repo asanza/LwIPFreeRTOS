@@ -1,3 +1,5 @@
+Configuration on include/FreeRTOSConfig.h
+
 Each real time kernel port consists of three files that contain the core kernel
 components and are common to every port, and one or more files that are 
 specific to a particular microcontroller and or compiler.
