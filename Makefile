@@ -5,7 +5,7 @@
 ### Subdirectories
 APPDIR		= #app
 CMSIS			= cmsis
-FREERTOS 	= #freertos
+FREERTOS 	= freertos
 PLIB			= plib
 
 include common.mk
