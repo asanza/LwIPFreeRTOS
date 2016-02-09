@@ -3,7 +3,7 @@
 #
 
 ### Subdirectories
-APPDIR		= #app
+APPDIR		= app
 CMSIS			= cmsis
 FREERTOS 	= freertos
 PLIB			= plib

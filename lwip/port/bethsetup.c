@@ -49,8 +49,8 @@ static portBASE_TYPE beth_init_eth(unsigned char* ucMACAddress);
 /* The semaphore used by the ISR to wake the lwIP task. */
 xSemaphoreHandle ETH_RX_Sem = NULL;
 
-#include <../../AppTemplate/src/stm3210c_eval.h>
-#include <../../AppTemplate/src/hwsetup.h>
+#include <../../app/src/stm3210c_eval.h>
+#include <../../app/src/hwsetup.h>
 
 #define netifINIT_WAIT	( 100 / portTICK_RATE_MS )
 

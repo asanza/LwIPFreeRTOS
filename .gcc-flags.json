@@ -1,0 +1,8 @@
+{
+  "execPath": "/usr/bin/arm-none-eabi-gcc",
+  "gccDefaultCFlags": "-Wall",
+  "gccDefaultCppFlags": "-Wall",
+  "gccErrorLimit": 15,
+  "gccIncludePaths": ".,./freertos/include,./plib/inc,./cmsis/Core/CM3,./app/src/",
+  "gccSuppressWarnings": true
+}

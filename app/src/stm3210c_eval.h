@@ -17,8 +17,8 @@
   * CODING INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
   *
   * <h2><center>&copy; COPYRIGHT 2009 STMicroelectronics</center></h2>
-  */ 
-  
+  */
+
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __STM3210C_EVAL_H
 #define __STM3210C_EVAL_H
@@ -33,10 +33,10 @@
 /** @addtogroup Utilities
   * @{
   */
-  
+
 /** @addtogroup STM3210C_EVAL
   * @{
-  */ 
+  */
 
 
 /** @defgroup STM3210C_EVAL_Exported_Types
@@ -44,22 +44,22 @@
   */
 /**
   * @}
-  */ 
+  */
 
 /** @defgroup STM3210C_EVAL_Exported_Constants
   * @{
-  */ 
+  */
 
 /** @addtogroup STM3210C_EVAL_LED
   * @{
   */
 #define LEDn                        4
 #define LED1_GPIO_PORT              GPIOC
-#define LED1_GPIO_CLK               RCC_APB2Periph_GPIOC  
+#define LED1_GPIO_CLK               RCC_APB2Periph_GPIOC
 #define LED1_GPIO_PIN               GPIO_Pin_6
-  
+
 #define LED2_GPIO_PORT              GPIOC
-#define LED2_GPIO_CLK               RCC_APB2Periph_GPIOC  
+#define LED2_GPIO_CLK               RCC_APB2Periph_GPIOC
 #define LED2_GPIO_PIN               GPIO_Pin_7
 
 #define LED3_GPIO_PORT              GPIOC
@@ -70,14 +70,14 @@
 #define LED4_GPIO_CLK               RCC_APB2Periph_GPIOE
 #define LED4_GPIO_PIN               GPIO_Pin_7
 
-  
+
 /**
   * @}
-  */ 
-  
+  */
+
 /** @addtogroup STM3210C_EVAL_BUTTON
   * @{
-  */  
+  */
 #define BUTTONn                     2 /**/
 
 /**
@@ -89,7 +89,7 @@
 #define WAKEUP_BUTTON_EXTI_LINE     EXTI_Line0
 #define WAKEUP_BUTTON_PORT_SOURCE   GPIO_PortSourceGPIOA
 #define WAKEUP_BUTTON_PIN_SOURCE    GPIO_PinSource0
-#define WAKEUP_BUTTON_IRQn          EXTI0_IRQn 
+#define WAKEUP_BUTTON_IRQn          EXTI0_IRQn
 
 /**
  * @brief Tamper push-button
@@ -100,11 +100,11 @@
 #define TAMPER_BUTTON_EXTI_LINE     EXTI_Line13
 #define TAMPER_BUTTON_PORT_SOURCE   GPIO_PortSourceGPIOC
 #define TAMPER_BUTTON_PIN_SOURCE    GPIO_PinSource13
-#define TAMPER_BUTTON_IRQn          EXTI15_10_IRQn 
+#define TAMPER_BUTTON_IRQn          EXTI15_10_IRQn
 
 /**
   * @}
-  */ 
+  */
 
 /** @addtogroup STM3210C_EVAL_COM
   * @{
@@ -112,8 +112,8 @@
 #define COMn                        1
 
 /**
- * @brief Definition for COM port1, connected to USART3 
- */ 
+ * @brief Definition for COM port1, connected to USART3
+ */
 #define EVAL_COM1                   USART2
 #define EVAL_COM1_GPIO              GPIOD
 #define EVAL_COM1_CLK               RCC_APB1Periph_USART2
@@ -152,7 +152,7 @@
 #define MMC_SPI                SPI3   /* SPI pins are remapped by software */
 #define MMC_SPI_CLK            RCC_APB1Periph_SPI3
 #define MMC_SPI_GPIO           GPIOC
-#define MMC_SPI_GPIO_CLK       RCC_APB2Periph_GPIOC  
+#define MMC_SPI_GPIO_CLK       RCC_APB2Periph_GPIOC
 #define MMC_PIN_SCK            GPIO_Pin_10
 #define MMC_PIN_MISO           GPIO_Pin_11
 #define MMC_PIN_MOSI           GPIO_Pin_12
@@ -165,7 +165,7 @@
 #define USB_VBUSON_PIN                  GPIO_Pin_7
 
 /**
- * @brief USB_FAULT 
+ * @brief USB_FAULT
  */
 #define USB_FAULT_PORT                 GPIOE
 #define USB_FAULT_CLK                  RCC_APB2Periph_GPIOE
@@ -176,7 +176,7 @@
 #define USB_FAULT_IRQn                 EXTI15_10_IRQn
 
 /**
- * @brief USB_FAULT 
+ * @brief USB_FAULT
  */
 #define USB_OTGID_PORT                 GPIOA
 #define USB_OTGID_CLK                  RCC_APB2Periph_GPIOA
@@ -198,27 +198,27 @@
 */
    /**
   * @}
-  */ 
+  */
 
 /**
   * @}
-  */ 
-  
+  */
+
 /** @defgroup STM3210C_EVAL_Exported_Macros
   * @{
-  */ 
+  */
 /**
   * @}
-  */ 
+  */
 
 
 /** @defgroup STM3210C_EVAL_Exported_Functions
   * @{
-  */ 
+  */
 /**
   * @}
   */
-  
+
 #ifdef __cplusplus
 }
 #endif
@@ -226,12 +226,12 @@
 #endif /* __STM3210C_EVAL_H */
 /**
   * @}
-  */ 
+  */
 
 
 /**
   * @}
-  */ 
+  */
 
 
 /******************* (C) COPYRIGHT 2009 STMicroelectronics *****END OF FILE****/

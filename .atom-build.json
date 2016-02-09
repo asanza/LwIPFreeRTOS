@@ -1,0 +1,13 @@
+{
+  "cmd": "make",
+  "name": "Make",
+  "args": [ ""],
+  "sh": true,
+  "env": {
+    "PATH": "/usr/bin"
+  },
+  "keymap": "ctrl-i",
+  "errorMatch": [
+    "\n(?<file>[\\/0-9a-zA-Z\\._]+):(?<line>\\d+):(?<col>\\d+)"
+  ]
+}
