@@ -20,7 +20,7 @@ SRCS:= $(wildcard $(SOURCE)/*.c) \
 OBJS:= $(patsubst %.c,%.o,$(SRCS))
 
 libfreertos.a: $(OBJS)
-	$(AR) rcs $@
+	$(AR) rcs libfreertos.a $(OBJS)
 
 %o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@

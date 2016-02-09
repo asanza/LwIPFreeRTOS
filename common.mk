@@ -18,4 +18,4 @@ SZ		= $(TRGT)size
 HEX		= $(CP) -O ihex
 BIN		= $(CP) -O binary
 
-CFLAGS += -mcpu=$(MCU) -mthumb 
+CFLAGS += -mcpu=$(MCU) -mthumb

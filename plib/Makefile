@@ -17,7 +17,7 @@ SRCS:= $(wildcard $(SOURCE)/*.c)
 OBJS:= $(patsubst %.c,%.o,$(SRCS))
 
 libplib.a: $(OBJS)
-	$(AR) rcs $@
+	$(AR) rcs libplib.a $(OBJS)
 
 %o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@

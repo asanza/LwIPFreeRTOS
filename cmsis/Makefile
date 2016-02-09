@@ -26,7 +26,7 @@ ASMSRC:= $(wildcard $(STARTUP)/*cl.s)
 ASMOBJ:= $(patsubst %.s,%.o,$(ASMSRC))
 
 libstartup.a: $(COBJ) $(ASMOBJ)
-	$(AR) rcs $@
+	$(AR) rcs libstartup.a $(COBJ) $(ASMOBJ)
 
 %o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
