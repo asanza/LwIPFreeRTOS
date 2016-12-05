@@ -10,7 +10,7 @@ PLIB			= plib
 
 include common.mk
 
-SUBDIRS = $(APPDIR) $(CMSIS) $(FREERTOS) $(PLIB)
+SUBDIRS = $(CMSIS) $(PLIB) $(FREERTOS) $(APPDIR) 
 
 .PHONY: subdirs $(SUBDIRS)
 
