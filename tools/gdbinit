@@ -1,4 +1,5 @@
 target remote localhost:3333
 monitor reset halt
-load app.elf
+file ../app/app.elf
+load
 monitor reset init
