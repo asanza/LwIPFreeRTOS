@@ -1,7 +1,7 @@
 # Common makefile definitions
 
 ### Build flags for all targets
-CFLAGS	= -g -Wall -Wextra -Wundef #-Wstrict-prototypes
+CFLAGS	= -g -O0 -Wall -Wextra -Wundef #-Wstrict-prototypes
 
 # Build tools
 MCU  = cortex-m3
